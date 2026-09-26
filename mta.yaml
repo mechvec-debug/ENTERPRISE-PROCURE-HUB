@@ -1,0 +1,26 @@
+_schema-version: '3.1'
+ID: enterprise-procure-hub
+version: 1.0.0
+description: "Enterprise Procurement Hub with Mock Wescale and Fiori PO"
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm install --production
+        - npx cds build --production
+
+modules:
+  - name: enterprise-procure-hub-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}

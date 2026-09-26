@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zescale Cloud Procurement</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <!-- TOP NAVIGATION BAR -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <div class="logo">
+        <i class="fa-solid fa-layer-group"></i>
+        <span><strong>ZE</strong>SCALE</span>
+      </div>
+      <span class="env-badge">ENTERPRISE HUB</span>
+    </div>
+    
+    <div class="nav-center">
+      <span class="url-breadcrumb" id="currentUrl">https://zescale.test.com/app/#/dashboard</span>
+    </div>
+
+    <div class="nav-right">
+      <div class="active-profile-chip" id="activeProfileChip" style="display: none;">
+        <i class="fa-solid fa-check-circle"></i>
+        <span id="activeProfileLabel">No Active Profile</span>
+      </div>
+      <button class="profile-btn" id="btnOpenProfile" data-testid="btn-open-profile" onclick="navigateTo('profile')">
+        <i class="fa-solid fa-user-gear"></i>
+        <span>Shopping Profile</span>
+      </button>
+      <div class="user-avatar" title="Current User">AS</div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section-title">PROCUREMENT MENU</div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="navFreeText" data-testid="nav-free-text" onclick="navigateTo('freetext')">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Free Text Option</span>
+        </button>
+        <button class="nav-item" id="navCatalog" data-testid="nav-catalog" onclick="navigateTo('catalog')">
+          <i class="fa-solid fa-book-open"></i>
+          <span>Catalog Option</span>
+        </button>
+        <button class="nav-item" id="navTraining" data-testid="nav-training" onclick="navigateTo('training')">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>Indirect Process Training</span>
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="system-status">
+          <span class="pulse-dot"></span> System Connected: <strong>yHL (CPH)</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN INTERACTIVE CANVAS -->
+    <main class="main-content">
+
+      <!-- VIEW 1: SHOPPING PROFILE CREATION / UPDATE -->
+      <section id="viewProfile" class="view-panel" style="display: none;">
+        <div class="panel-header">
+          <div>
+            <h2>Manage Shopping Profile</h2>
+            <p class="subtitle">Set your default procurement parameters and delivery routing.</p>
+          </div>
+          <button class="btn-secondary" onclick="navigateTo('freetext')">Back to Cart</button>
+        </div>
+
+        <div class="form-card">
+          <form id="profileForm" onsubmit="event.preventDefault(); saveShoppingProfile();">
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label for="profileName">Shopping Profile Name <span class="required">*</span></label>
+                <input type="text" id="profileName" name="profileName" data-testid="input-profile-name" placeholder="e.g. IT Procurement Profile - Sami" required />
+              </div>
+
+              <div class="form-group">
+                <label for="cphSystem">CPH System <span class="required">*</span></label>
+                <input type="text" id="cphSystem" name="cphSystem" data-testid="input-cph-system" value="yHL" required />
+              </div>
+
+              <div class="form-group">
+                <label for="countryCode">Country <span class="required">*</span></label>
+                <select id="countryCode" name="countryCode" data-testid="select-country" required>
+                  <option value="IN" selected>India (IN)</option>
+                  <option value="US">United States (US)</option>
+                  <option value="DE">Germany (DE)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="companyCode">Company Code <span class="required">*</span></label>
+                <input type="text" id="companyCode" name="companyCode" data-testid="input-company-code" placeholder="e.g. 1000" value="1000" required />
+              </div>
+
+              <div class="form-group">
+                <label for="plant">Plant <span class="required">*</span></label>
+                <input type="text" id="plant" name="plant" data-testid="input-plant" placeholder="e.g. 1010" value="1010" required />
+              </div>
+
+              <div class="form-group full-width">
+                <label for="accountingObject">Accounting Object (Default Cost Center / WBS) <span class="required">*</span></label>
+                <input type="text" id="accountingObject" name="accountingObject" data-testid="input-accounting-object" placeholder="e.g. CC-9010-IT" value="CC-9010-IT" required />
+              </div>
+
+              <div class="form-group full-width">
+                <label for="deliveryAddress">Delivery Address <span class="required">*</span></label>
+                <textarea id="deliveryAddress" name="deliveryAddress" data-testid="input-delivery-address" rows="3" placeholder="Enter building, floor, room number..." required>HQ Tech Park, Tower B, Level 4, Bellary</textarea>
+              </div>
+            </div>
+
+            <div class="form-actions-right">
+              <button type="submit" class="btn-primary" id="btnSaveProfile" data-testid="btn-save-profile">
+                <i class="fa-solid fa-floppy-disk"></i> SAVE and Activate Profile
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- VIEW 2: FREE TEXT SHOPPING CART & LINE ITEM CREATION -->
+      <section id="viewFreeText" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Create Shopping Cart (Free Text)</h2>
+            <p class="subtitle">Enter custom line items for direct order dispatch to SAP.</p>
+          </div>
+          <div class="cart-summary-badge">
+            Items in Cart: <strong id="cartItemCount">0</strong> | Total: <strong id="cartGrandTotal">0.00 EUR</strong>
+          </div>
+        </div>
+
+        <!-- LINE ITEM INPUT CARD -->
+        <div class="form-card">
+          <div class="card-section-title"><i class="fa-solid fa-list-check"></i> Item Details Entry</div>
+          <form id="lineItemForm" onsubmit="event.preventDefault(); addLineItemToCart();">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="orderType">Order Type <span class="required">*</span></label>
+                <select id="orderType" name="orderType" data-testid="select-order-type" required>
+                  <option value="Standard Purchase" selected>Standard Purchase</option>
+                  <option value="Capex Asset">Capex Asset</option>
+                  <option value="Consumable">Consumable</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="materialGroup">Material Group <span class="required">*</span></label>
+                <input type="text" id="materialGroup" name="materialGroup" data-testid="input-material-group" placeholder="e.g. IT-HARDWARE" value="IT-HARDWARE" required />
+              </div>
+
+              <div class="form-group full-width">
+                <label for="shortDescription">Short Description <span class="required">*</span></label>
+                <input type="text" id="shortDescription" name="shortDescription" data-testid="input-short-description" placeholder="e.g. 27-inch 4K UHD Developer Monitor" required />
+              </div>
+
+              <div class="form-group">
+                <label for="quantity">Quantity <span class="required">*</span></label>
+                <input type="number" id="quantity" name="quantity" data-testid="input-quantity" min="1" step="1" value="1" required />
+              </div>
+
+              <div class="form-group">
+                <label for="orderUnit">Order Unit <span class="required">*</span></label>
+                <select id="orderUnit" name="orderUnit" data-testid="select-order-unit" required>
+                  <option value="EA" selected>EA (Each)</option>
+                  <option value="SET">SET</option>
+                  <option value="BOX">BOX</option>
+                  <option value="HR">HR (Hours)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="netPrice">Net Price <span class="required">*</span></label>
+                <input type="number" id="netPrice" name="netPrice" data-testid="input-net-price" min="0.01" step="0.01" placeholder="0.00" required />
+              </div>
+
+              <div class="form-group">
+                <label for="currency">Currency <span class="required">*</span></label>
+                <select id="currency" name="currency" data-testid="select-currency" required>
+                  <option value="EUR" selected>EUR</option>
+                  <option value="INR">INR</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="plannedDeliveryDate">Planned Delivery Date <span class="required">*</span></label>
+                <input type="date" id="plannedDeliveryDate" name="plannedDeliveryDate" data-testid="input-delivery-date" required />
+              </div>
+
+              <div class="form-group">
+                <label for="accountingAssignment">Accounting Assignment (Cost Center / WBS) <span class="required">*</span></label>
+                <input type="text" id="accountingAssignment" name="accountingAssignment" data-testid="input-acc-assignment" placeholder="e.g. CC-9010-IT" required />
+              </div>
+
+              <div class="form-group">
+                <label for="supplierDetails">Supplier Number and Name <span class="required">*</span></label>
+                <input type="text" id="supplierDetails" name="supplierDetails" data-testid="input-supplier" placeholder="e.g. 100458 - Dell Enterprise Direct" value="100458 - Dell Direct" required />
+              </div>
+
+              <div class="form-group">
+                <label for="approverDetails">Approver Details <span class="required">*</span></label>
+                <input type="text" id="approverDetails" name="approverDetails" data-testid="input-approver" placeholder="e.g. approver.manager@enterprise.com" value="approver.manager@enterprise.com" required />
+              </div>
+            </div>
+
+            <div class="form-actions-inline">
+              <button type="submit" class="btn-secondary" id="btnAddLineItem" data-testid="btn-add-line-item">
+                <i class="fa-solid fa-plus"></i> Add Line Item
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- STAGED ITEMS TABLE -->
+        <div class="table-card">
+          <div class="card-section-title"><i class="fa-solid fa-table-list"></i> Added Line Items Preview</div>
+          <table class="data-table" id="scItemsTable" data-testid="table-sc-items">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th>Order Type</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Net Price</th>
+                <th>Subtotal</th>
+                <th>Account Assigned</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="scItemsTableBody">
+              <tr id="emptyRowPlaceholder">
+                <td colspan="9" class="text-center empty-state">No items added yet. Complete the form above and click "Add Line Item".</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="submit-tray">
+            <button class="btn-submit-sc" id="btnSubmitCart" data-testid="btn-submit-cart" onclick="submitFinalCart()" disabled>
+              <i class="fa-solid fa-paper-plane"></i> Add Line Item and Submit
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: SIMULATED INSTRUCTION / CATALOG -->
+      <section id="viewCatalog" class="view-panel" style="display: none;">
+        <div class="panel-header">
+          <h2>Catalog View</h2>
+          <p class="subtitle">Search pre-approved corporate punch-out catalogs.</p>
+        </div>
+        <div class="empty-placeholder-card">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <h3>Standard Catalog Portal</h3>
+          <p>Punch-out catalogs are active. Use <strong>Free Text Option</strong> to test custom approval flows.</p>
+        </div>
+      </section>
+
+      <section id="viewTraining" class="view-panel" style="display: none;">
+        <div class="panel-header">
+          <h2>Indirect Process Training</h2>
+          <p class="subtitle">Procure-to-Pay workflow reference guide.</p>
+        </div>
+        <div class="empty-placeholder-card">
+          <i class="fa-solid fa-chalkboard-user"></i>
+          <h3>Training Modules</h3>
+          <p>Standard Operating Procedure: Create Profile &rarr; Input Free-Text Items &rarr; Submit &rarr; Approver Sign-off &rarr; Auto PO.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manager Approval Inbox</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --sapPrimary: #0070f2; --sapBackground: #f5f6f7; --sapCardBg: #ffffff; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--sapBackground); margin: 0; padding: 24px; color: #32363a; }
+    .header { background: var(--sapCardBg); padding: 20px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .card { background: var(--sapCardBg); padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e5e5; vertical-align: middle; }
+    th { background-color: #f8f9fa; font-weight: 600; color: #555; }
+    .badge { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .badge-submitted { background: #e1f5fe; color: #0288d1; }
+    .badge-pocreated { background: #ede7f6; color: #512da8; }
+    .badge-rejected { background: #ffebee; color: #c62828; }
+    .btn-group { display: flex; gap: 8px; align-items: center; }
+    .btn { border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-approve { background: #107e3e; color: white; }
+    .btn-approve:hover { background: #0b5c2d; }
+    .btn-reject { background: #d32f2f; color: white; }
+    .btn-reject:hover { background: #b71c1c; }
+    .btn-refresh { background: var(--sapPrimary); color: white; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h2 style="margin: 0 0 6px 0;"><i class="fa-solid fa-list-check"></i> Manager Approval Inbox</h2>
+      <small style="color: #666;">Review incoming enterprise shopping carts to approve or reject.</small>
+    </div>
+    <button class="btn btn-refresh" onclick="loadPendingCarts()"><i class="fa-solid fa-rotate"></i> Refresh Inbox</button>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top: 0;">Pending Shopping Carts</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Cart ID</th>
+          <th>Profile</th>
+          <th>Cost Center</th>
+          <th>Approver</th>
+          <th>Total Amount</th>
+          <th>Status</th>
+          <th style="min-width: 180px;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="approverTableBody">
+        <tr><td colspan="7" style="text-align: center; color: #888;">Loading carts...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadPendingCarts() {
+      const tbody = document.getElementById("approverTableBody");
+      try {
+        const res = await fetch('/odata/v4/procurement/ShoppingCarts');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const carts = data.value || [];
+
+        if (carts.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #888;">No shopping carts in database.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = "";
+        carts.forEach(cart => {
+          let badgeClass = "badge-submitted";
+          if (cart.status === "PO_CREATED") badgeClass = "badge-pocreated";
+          if (cart.status === "REJECTED") badgeClass = "badge-rejected";
+
+          let actionCell = "";
+          if (cart.status === 'SUBMITTED') {
+            actionCell = `
+              <div class="btn-group">
+                <button class="btn btn-approve" onclick="triggerDecision('${cart.ID}', '${cart.cartNumber}', 'approveCart')">
+                  <i class="fa-solid fa-check"></i> Approve
+                </button>
+                <button class="btn btn-reject" onclick="triggerDecision('${cart.ID}', '${cart.cartNumber}', 'rejectCart')">
+                  <i class="fa-solid fa-xmark"></i> Reject
+                </button>
+              </div>
+            `;
+          } else if (cart.status === 'PO_CREATED') {
+            actionCell = `<span style="color: #4a148c; font-weight: 700;"><i class="fa-solid fa-file-invoice"></i> PO: ${cart.poNumber || 'Generated'}</span>`;
+          } else if (cart.status === 'REJECTED') {
+            actionCell = `<span style="color: #c62828; font-weight: 700;"><i class="fa-solid fa-ban"></i> Rejected</span>`;
+          }
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><strong>${cart.cartNumber}</strong></td>
+            <td>${cart.profileName || 'Standard Operations'}</td>
+            <td><code>${cart.costCenter}</code></td>
+            <td>${cart.approver}</td>
+            <td><strong>${Number(cart.totalAmount).toFixed(2)} ${cart.currency}</strong></td>
+            <td><span class="badge ${badgeClass}">${cart.status}</span></td>
+            <td>${actionCell}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Error loading carts:", err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function triggerDecision(cartId, cartNumber, actionName) {
+      const isApprove = actionName === 'approveCart';
+      const promptText = isApprove
+        ? `Approve Shopping Cart ${cartNumber}? Automatic SAP PO creation will be executed.`
+        : `Reject Shopping Cart ${cartNumber}?`;
+
+      if (!confirm(promptText)) return;
+
+      try {
+        const res = await fetch(`/odata/v4/procurement/${actionName}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cartId: cartId })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData?.error?.message || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (isApprove) {
+          alert(`Success! Cart ${cartNumber} approved.\nPurchase Order ${data.poNumber} created.`);
+        } else {
+          alert(`Cart ${cartNumber} rejected.`);
+        }
+
+        loadPendingCarts();
+      } catch (err) {
+        alert(`Action failed: ${err.message}`);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadPendingCarts);
+  </script>
+</body>
+</html>

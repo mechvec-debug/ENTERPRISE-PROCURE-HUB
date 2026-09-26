@@ -1,0 +1,25 @@
+{
+  "name": "enterprise-procure-hub",
+  "version": "1.0.0",
+  "description": "Enterprise Procurement Hub with Mock Wescale and Fiori PO",
+  "repository": "<none>",
+  "license": "UNLICENSED",
+  "private": true,
+"dependencies": {
+"@cap-js/sqlite": "^3.1.1",
+"@sap/cds": "^10.1.1",
+"express": "^4"
+},
+  "devDependencies": {
+    "@sap/cds-dk": "^10"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch"
+  },
+  "cds": {
+    "sql": {
+      "native_operands": true
+    }
+  }
+}
