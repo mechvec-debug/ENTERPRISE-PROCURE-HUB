@@ -154,7 +154,9 @@
 
               <div class="form-group">
                 <label for="materialGroup">Material Group <span class="required">*</span></label>
-                <input type="text" id="materialGroup" name="materialGroup" data-testid="input-material-group" placeholder="e.g. IT-HARDWARE" value="IT-HARDWARE" required />
+                <select id="materialGroup" name="materialGroup" data-testid="input-material-group" required>
+                  <option value="IT-HARDWARE" selected>IT-HARDWARE - Computer & Server Hardware</option>
+                </select>
               </div>
 
               <div class="form-group full-width">
@@ -196,19 +198,33 @@
                 <input type="date" id="plannedDeliveryDate" name="plannedDeliveryDate" data-testid="input-delivery-date" required />
               </div>
 
-              <div class="form-group">
-                <label for="accountingAssignment">Accounting Assignment (Cost Center / WBS) <span class="required">*</span></label>
-                <input type="text" id="accountingAssignment" name="accountingAssignment" data-testid="input-acc-assignment" placeholder="e.g. CC-9010-IT" required />
-              </div>
+                <div class="form-group">
+                  <label for="accountingAssignment" id="lblAccountingAssignment">Accounting Assignment <span class="required">*</span></label>
+                  <select id="accountingAssignment" name="accountingAssignment" data-testid="input-acc-assignment" required>
+                    <option value="CC-9010-IT" selected>CC-9010-IT - Enterprise IT Infrastructure</option>
+                  </select>
+                </div>
 
               <div class="form-group">
                 <label for="supplierDetails">Supplier Number and Name <span class="required">*</span></label>
-                <input type="text" id="supplierDetails" name="supplierDetails" data-testid="input-supplier" placeholder="e.g. 100458 - Dell Enterprise Direct" value="100458 - Dell Direct" required />
+                <select id="supplierDetails" name="supplierDetails" data-testid="input-supplier" required>
+                  <option value="100458 - Dell Direct" selected>100458 - Dell Direct</option>
+                </select>
               </div>
 
               <div class="form-group">
                 <label for="approverDetails">Approver Details <span class="required">*</span></label>
                 <input type="text" id="approverDetails" name="approverDetails" data-testid="input-approver" placeholder="e.g. approver.manager@enterprise.com" value="approver.manager@enterprise.com" required />
+              </div>
+
+              <!-- NEW FIELD: Placed directly in the empty space below Supplier Details -->
+              <div class="form-group">
+                <label for="accountAssignmentCat">Account Assignment Category <span class="required">*</span></label>
+                <select id="accountAssignmentCat" name="accountAssignmentCat" data-testid="select-acc-cat" onchange="onAccountCategoryChange()" required>
+                  <option value="K" selected>K - Cost Center</option>
+                  <option value="P">P - WBS Element</option>
+                  <option value="F">F - Internal Order</option>
+                </select>
               </div>
             </div>
 

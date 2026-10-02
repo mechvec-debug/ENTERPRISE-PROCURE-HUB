@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAP Fiori Launchpad - Enterprise Procurement Hub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --sapShellBg: #354a5f;
+      --sapPageBg: #edf1f5;
+      --sapCardBg: #ffffff;
+      --sapPrimary: #0070f2;
+      --sapText: #32363a;
+      --sapSubtext: #6a6d70;
+      --sapBorder: #d9d9d9;
+      --sapBadgePending: #e9730c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "72", "72full", Arial, Helvetica, sans-serif;
+      background-color: var(--sapPageBg);
+      color: var(--sapText);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* SAP Shell Header */
+    .shell-header {
+      background-color: var(--sapShellBg);
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .shell-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sap-logo {
+      height: 24px;
+      fill: #ffffff;
+    }
+    .shell-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .shell-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #0070f2;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+      border: 1px solid #ffffff;
+    }
+    /* Main Content Area */
+    .launchpad-content {
+      padding: 32px 48px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+    .group-section {
+      margin-bottom: 36px;
+    }
+    .group-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #32363a;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    /* Fiori Standard Tile */
+    .sap-tile {
+      background: var(--sapCardBg);
+      border-radius: 8px;
+      border: 1px solid var(--sapBorder);
+      padding: 20px;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      position: relative;
+      cursor: pointer;
+    }
+    .sap-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      border-color: var(--sapPrimary);
+    }
+    .tile-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .tile-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0b1a29;
+      margin: 0 0 6px 0;
+    }
+    .tile-subtitle {
+      font-size: 12px;
+      color: var(--sapSubtext);
+      line-height: 1.4;
+      margin: 0;
+    }
+    .tile-icon {
+      font-size: 26px;
+      color: var(--sapPrimary);
+    }
+    .tile-kpi {
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--sapBadgePending);
+      margin: 8px 0 0 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .tile-kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sapSubtext);
+      text-transform: uppercase;
+    }
+    .tile-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--sapSubtext);
+      border-top: 1px solid #f0f0f0;
+      padding-top: 10px;
+      margin-top: 12px;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #107e3e;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SAP Shell Header Bar -->
+  <header class="shell-header">
+    <div class="shell-left">
+      <svg class="sap-logo" viewBox="0 0 54 26" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 0h54v26H0z" fill="#0070F2"/>
+        <text x="6" y="19" fill="#ffffff" font-size="16" font-weight="bold" font-family="Arial">SAP</text>
+      </svg>
+      <span class="shell-title">Enterprise Procurement Hub</span>
+    </div>
+    <div class="shell-right">
+      <span style="font-size: 13px; color: #d1e5ff;"><i class="fa-solid fa-building"></i> Plant 1010</span>
+      <div class="user-avatar" title="Logged in as Approver Manager">AS</div>
+    </div>
+  </header>
+
+  <!-- Launchpad Groups & Tiles -->
+  <main class="launchpad-content">
+
+    <!-- Group 1: Procurement & Self-Service -->
+    <section class="group-section">
+      <div class="group-title">
+        <i class="fa-solid fa-cart-shopping" style="color: var(--sapPrimary);"></i> Requisition & Sourcing
+      </div>
+      <div class="tile-grid">
+        <a class="sap-tile" href="/wescale-portal/webapp/index.html">
+          <div>
+            <div class="tile-top">
+              <div>
+                <h3 class="tile-title">Create Requisition</h3>
+                <p class="tile-subtitle">Zescale Cloud Requisition & Catalog Intake</p>
+              </div>
+              <i class="fa-solid fa-file-invoice-dollar tile-icon"></i>
+            </div>
+          </div>
+          <div class="tile-footer">
+            <span><span class="status-dot"></span>Direct SAP CAP Integration</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Group 2: Approvals & Tasks -->
+    <section class="group-section">
+      <div class="group-title">
+        <i class="fa-solid fa-inbox" style="color: #e9730c;"></i> Approvals & Workflow
+      </div>
+      <div class="tile-grid">
+        <a class="sap-tile" href="/approval-portal/webapp/index.html">
+          <div>
+            <div class="tile-top">
+              <div>
+                <h3 class="tile-title">My Approval Inbox</h3>
+                <p class="tile-subtitle">Approve or Reject Shopping Carts</p>
+              </div>
+              <i class="fa-solid fa-signature tile-icon" style="color: #e9730c;"></i>
+            </div>
+            <div class="tile-kpi" id="pendingCartCount">
+              <span>--</span>
+              <span class="tile-kpi-label">Pending</span>
+            </div>
+          </div>
+          <div class="tile-footer">
+            <span id="kpiFooterText">Fetching live status...</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Group 3: Real SAP ERP Processing -->
+    <section class="group-section">
+      <div class="group-title">
+        <i class="fa-solid fa-boxes-stacked" style="color: #107e3e;"></i> Purchase Order Management
+      </div>
+      <div class="tile-grid">
+        <!-- Tile: Post Goods Receipt (MIGO) -->
+        <a class="sap-tile" href="/goods-receipt/webapp/index.html">
+          <div>
+            <div class="tile-top">
+              <div>
+                <h3 class="tile-title">Post Goods Receipt (MIGO)</h3>
+                <p class="tile-subtitle">Inbound Movement 101 & Storage Location Intake</p>
+              </div>
+              <i class="fa-solid fa-truck-ramp-box tile-icon" style="color: #107e3e;"></i>
+            </div>
+          </div>
+          <div class="tile-footer">
+            <span>Warehouse Movement 101</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </a>
+        
+        <!-- Tile: Purchase Orders Fiori App -->
+        <a class="sap-tile" href="/$fiori-preview/ProcurementService/PurchaseOrders#preview-app">
+          <div>
+            <div class="tile-top">
+              <div>
+                <h3 class="tile-title">Manage Purchase Orders</h3>
+                <p class="tile-subtitle">Standard SAP Screen (Header, Org Data, Line Items)</p>
+              </div>
+              <i class="fa-solid fa-file-lines tile-icon" style="color: #107e3e;"></i>
+            </div>
+          </div>
+          <div class="tile-footer">
+            <span>Status: Ordered & Transmitted</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </a>
+
+        <!-- Tile: Shopping Carts Monitor -->
+        <a class="sap-tile" href="/$fiori-preview/ProcurementService/ShoppingCarts#preview-app">
+          <div>
+            <div class="tile-top">
+              <div>
+                <h3 class="tile-title">Shopping Carts Monitor</h3>
+                <p class="tile-subtitle">Requisition Audit & Lifecycle Overview</p>
+              </div>
+              <i class="fa-solid fa-list-check tile-icon"></i>
+            </div>
+          </div>
+          <div class="tile-footer">
+            <span>Fiori Elements List Report</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Live Dynamic KPI Script -->
+  <script>
+    async function updateInboxKPI() {
+      const countEl = document.getElementById("pendingCartCount");
+      const footerEl = document.getElementById("kpiFooterText");
+      try {
+        const res = await fetch("/odata/v4/procurement/ShoppingCarts?$filter=status eq 'SUBMITTED'&$count=true");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const pendingCount = data["@odata.count"] !== undefined ? data["@odata.count"] : (data.value ? data.value.length : 0);
+        
+        countEl.innerHTML = `<span>${pendingCount}</span><span class="tile-kpi-label">Pending</span>`;
+        countEl.style.color = pendingCount > 0 ? "var(--sapBadgePending)" : "#107e3e";
+        footerEl.textContent = pendingCount > 0 ? "Requires Manager Action" : "All Carts Processed";
+      } catch (e) {
+        console.warn("Could not retrieve KPI count:", e);
+        countEl.innerHTML = `<span>0</span><span class="tile-kpi-label">Pending</span>`;
+        footerEl.textContent = "Live Feed Connected";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateInboxKPI();
+      // Auto-refresh the dynamic badge every 15 seconds
+      setInterval(updateInboxKPI, 15000);
+    });
+  </script>
+</body>
+</html>

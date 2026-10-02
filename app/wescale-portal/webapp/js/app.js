@@ -11,7 +11,7 @@ let shoppingProfile = {
 
 let currentCartItems = [];
 
-// Initialize Page Defaults
+// Initialize Page Defaults & Master Data Dropdowns
 document.addEventListener("DOMContentLoaded", () => {
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 7);
@@ -22,7 +22,92 @@ document.addEventListener("DOMContentLoaded", () => {
   
   applyProfileToCart();
   renderProfileBadge();
+  loadMasterDataAndDropdowns();
 });
+
+// Master Data Loader & Dynamic Dropdown Populator
+async function loadMasterDataAndDropdowns() {
+  try {
+    // 1. Load Material Groups
+    const resMg = await fetch("/odata/v4/procurement/MaterialGroups");
+    if (resMg.ok) {
+      const data = await resMg.json();
+      const mgSelect = document.getElementById("materialGroup");
+      if (mgSelect && data.value?.length > 0) {
+        mgSelect.innerHTML = data.value.map(mg => 
+          `<option value="${mg.code}">${mg.code} - ${mg.description}</option>`
+        ).join("");
+      }
+    }
+
+    // 2. Load Units of Measure
+    const resUom = await fetch("/odata/v4/procurement/UnitsOfMeasure");
+    if (resUom.ok) {
+      const data = await resUom.json();
+      const uomSelect = document.getElementById("orderUnit");
+      if (uomSelect && data.value?.length > 0) {
+        uomSelect.innerHTML = data.value.map(u => 
+          `<option value="${u.code}">${u.code} (${u.description})</option>`
+        ).join("");
+      }
+    }
+
+    // 3. Load Suppliers
+    const resSup = await fetch("/odata/v4/procurement/Suppliers");
+    if (resSup.ok) {
+      const data = await resSup.json();
+      const supSelect = document.getElementById("supplierDetails");
+      if (supSelect && data.value?.length > 0) {
+        supSelect.innerHTML = data.value.map(s => 
+          `<option value="${s.code} - ${s.name}">${s.code} - ${s.name} (${s.country})</option>`
+        ).join("");
+      }
+    }
+
+    // 4. Initialize Account Assignment Category and trigger cascading lookup
+    await onAccountCategoryChange();
+  } catch (err) {
+    console.warn("Could not load backend master data dropdowns:", err);
+  }
+}
+
+// Cascading Dropdown: Changes Accounting Objects dynamically based on K, P, or F
+async function onAccountCategoryChange() {
+  const cat = document.getElementById("accountAssignmentCat")?.value || "K";
+  const accSelect = document.getElementById("accountingAssignment");
+  const lbl = document.getElementById("lblAccountingAssignment");
+  if (!accSelect) return;
+
+  accSelect.innerHTML = '<option value="">Loading options...</option>';
+
+  try {
+    if (cat === "K") {
+      if (lbl) lbl.innerHTML = `Cost Center (Category K) <span class="required">*</span>`;
+      const res = await fetch("/odata/v4/procurement/CostCenters");
+      const data = await res.json();
+      accSelect.innerHTML = (data.value || []).map(cc => 
+        `<option value="${cc.code}" ${cc.code === shoppingProfile.accountingObject ? "selected" : ""}>${cc.code} - ${cc.name}</option>`
+      ).join("");
+    } else if (cat === "P") {
+      if (lbl) lbl.innerHTML = `WBS Element (Category P) <span class="required">*</span>`;
+      const res = await fetch("/odata/v4/procurement/WBSElements");
+      const data = await res.json();
+      accSelect.innerHTML = (data.value || []).map(wbs => 
+        `<option value="${wbs.code}">${wbs.code} - ${wbs.description}</option>`
+      ).join("");
+    } else if (cat === "F") {
+      if (lbl) lbl.innerHTML = `Internal Order (Category F) <span class="required">*</span>`;
+      const res = await fetch("/odata/v4/procurement/InternalOrders");
+      const data = await res.json();
+      accSelect.innerHTML = (data.value || []).map(io => 
+        `<option value="${io.code}">${io.code} - ${io.description}</option>`
+      ).join("");
+    }
+  } catch (e) {
+    console.error("Error populating account objects:", e);
+    accSelect.innerHTML = `<option value="CC-9010-IT">CC-9010-IT - Enterprise IT Infrastructure</option>`;
+  }
+}
 
 // Navigation Controller
 function navigateTo(target) {
@@ -129,6 +214,7 @@ function addLineItemToCart() {
     subtotal: qty * price,
     currency: document.getElementById("currency").value || "EUR",
     accounting: document.getElementById("accountingAssignment").value || shoppingProfile.accountingObject,
+    accCategory: document.getElementById("accountAssignmentCat")?.value || "K",
     deliveryDate: deliveryDate,
     supplier: document.getElementById("supplierDetails").value || "100458 - Dell Direct",
     approver: document.getElementById("approverDetails").value || "approver.manager@enterprise.com"

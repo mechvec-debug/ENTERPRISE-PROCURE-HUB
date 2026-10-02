@@ -5,17 +5,19 @@
   "repository": "<none>",
   "license": "UNLICENSED",
   "private": true,
-"dependencies": {
-"@cap-js/sqlite": "^3.1.1",
-"@sap/cds": "^10.1.1",
-"express": "^4"
-},
+  "dependencies": {
+    "@cap-js/sqlite": "^3.1.1",
+    "@sap/cds": "^10.1.1",
+    "express": "^4"
+  },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sap/cds-dk": "^10"
   },
   "scripts": {
     "start": "cds-serve",
-    "watch": "cds watch"
+    "watch": "cds watch",
+    "test": "npx playwright test"
   },
   "cds": {
     "sql": {

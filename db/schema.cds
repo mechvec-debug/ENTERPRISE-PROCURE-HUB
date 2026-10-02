@@ -52,6 +52,7 @@ entity PurchaseOrderItems : cuid {
   accAssignmentCategory : String(10);
   shortText             : String(255);
   quantity              : Decimal(13, 3);
+  receivedQuantity      : Decimal(13, 3) default 0;
   unitOfMeasure         : String(10);
   netPrice              : Decimal(15, 2);
   currency              : String(5);
@@ -59,4 +60,77 @@ entity PurchaseOrderItems : cuid {
   materialGroup         : String(50);
   plant                 : String(10);
   referencePR           : String(50);
+}
+
+// ==========================================
+// GOODS RECEIPT (MIGO - MOVEMENT 101)
+// ==========================================
+entity GoodsReceipts : cuid, managed {
+  materialDocNumber : String(50);
+  docYear           : Integer;
+  postingDate       : Date;
+  documentDate      : Date;
+  poNumber          : String(50);
+  deliveryNote      : String(100);
+  headerText        : String(255);
+  status            : String(50);
+  items             : Composition of many GoodsReceiptItems on items.parent = $self;
+}
+
+entity GoodsReceiptItems : cuid {
+  parent          : Association to GoodsReceipts;
+  itemNumber      : Integer;
+  poItemNumber    : Integer;
+  shortText       : String(255);
+  quantity        : Decimal(13, 3);
+  unitOfMeasure   : String(10);
+  storageLocation : String(10);
+  plant           : String(10);
+  movementType    : String(10); // '101'
+}
+
+// ==========================================
+// MASTER DATA & VALUE HELP TABLES
+// ==========================================
+entity Suppliers {
+  key code        : String(20);
+      name        : String(100);
+      country     : String(10);
+      city        : String(100);
+      currency    : String(5);
+}
+
+entity MaterialGroups {
+  key code        : String(20);
+      description : String(100);
+}
+
+entity UnitsOfMeasure {
+  key code        : String(10);
+      description : String(100);
+}
+
+entity AccountAssignmentCategories {
+  key code        : String(10);  // 'K', 'P', 'F'
+      description : String(100);
+      objectType  : String(50);   // 'Cost Center', 'WBS Element', 'Internal Order'
+}
+
+entity CostCenters {
+  key code        : String(50);  // e.g. 'CC-9010-IT'
+      name        : String(100);
+      companyCode : String(10);
+      responsible : String(100);
+}
+
+entity WBSElements {
+  key code        : String(50);  // e.g. 'PRJ-2026-CLOUD-01'
+      description : String(100);
+      projectCode : String(50);
+}
+
+entity InternalOrders {
+  key code        : String(50);  // e.g. 'ORD-77001-FACILITY'
+      description : String(100);
+      companyCode : String(10);
 }

@@ -204,4 +204,93 @@ module.exports = cds.service.impl(async function () {
       status: 'REJECTED'
     });
   });
-});
+
+
+// 7. POST GOODS RECEIPT (MIGO - MOVEMENT 101)
+    this.on('postGoodsReceipt', async (req) => {
+    const { poNumber, deliveryNote, headerText, items } = req.data;
+    if (!poNumber) return req.reject(400, 'Purchase Order number (poNumber) is required');
+    if (!items || !items.length) return req.reject(400, 'At least one line item must be received');
+
+    // 1. Validate Purchase Order
+    const po = await cds.run(SELECT.one.from('mock.procurement.PurchaseOrders').where({ poNumber }));
+    if (!po) return req.reject(404, `Purchase Order ${poNumber} not found`);
+
+    const grId = cds.utils.uuid();
+    const matDocNumber = '50000' + Math.floor(10000 + Math.random() * 90000);
+    const currentYear = 2026;
+    const today = new Date().toISOString().split('T')[0];
+
+    // 2. Insert Material Document Header
+    await cds.run(INSERT.into('mock.procurement.GoodsReceipts').entries({
+      ID: grId,
+      materialDocNumber: matDocNumber,
+      docYear: currentYear,
+      postingDate: today,
+      documentDate: today,
+      poNumber: poNumber,
+      deliveryNote: deliveryNote || 'DEL-' + Math.floor(100000 + Math.random() * 900000),
+      headerText: headerText || 'Standard Inbound Delivery (101)',
+      status: 'POSTED'
+    }));
+
+    // 3. Process Goods Receipt Line Items & Update PO Quantities
+    const grItemEntries = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const poItemNum = it.poItemNumber || (i + 1) * 10;
+      const qtyReceived = Number(it.quantityReceived) || 0;
+
+      grItemEntries.push({
+        ID: cds.utils.uuid(),
+        parent_ID: grId,
+        itemNumber: (i + 1) * 10,
+        poItemNumber: poItemNum,
+        shortText: it.shortText || 'Item',
+        quantity: qtyReceived,
+        unitOfMeasure: it.unitOfMeasure || 'EA',
+        storageLocation: it.storageLocation || '101A',
+        plant: it.plant || po.plant || '1010',
+        movementType: '101'
+      });
+
+      // Update receivedQuantity on PO line item
+      const poItem = await cds.run(SELECT.one.from('mock.procurement.PurchaseOrderItems').where({
+        parent_ID: po.ID,
+        itemNumber: poItemNum
+      }));
+
+      if (poItem) {
+        const newReceivedQty = (Number(poItem.receivedQuantity) || 0) + qtyReceived;
+        await cds.run(UPDATE('mock.procurement.PurchaseOrderItems')
+          .set({ receivedQuantity: newReceivedQty })
+          .where({ ID: poItem.ID }));
+      }
+    }
+
+    if (grItemEntries.length > 0) {
+      await cds.run(INSERT.into('mock.procurement.GoodsReceiptItems').entries(grItemEntries));
+    }
+
+    // 4. Update PO Status ('Delivered' if all items fully received, else 'Partially Delivered')
+    const allPoItems = await cds.run(SELECT.from('mock.procurement.PurchaseOrderItems').where({ parent_ID: po.ID }));
+    const allFulfilled = allPoItems.length > 0 && allPoItems.every(pi => (Number(pi.receivedQuantity) || 0) >= Number(pi.quantity));
+
+    const finalPoStatus = allFulfilled ? 'Delivered' : 'Partially Delivered';
+    await cds.run(UPDATE('mock.procurement.PurchaseOrders').set({ status: finalPoStatus }).where({ ID: po.ID }));
+
+    console.log(`[FLOW-DEBUG 🚚] Goods Receipt ${matDocNumber} (Mvt 101) posted for PO ${poNumber}. New PO Status: ${finalPoStatus}`);
+
+    return req.reply({
+      ID: grId,
+      materialDocNumber: matDocNumber,
+      docYear: currentYear,
+      postingDate: today,
+      documentDate: today,
+      poNumber: poNumber,
+      deliveryNote: deliveryNote || '',
+      headerText: headerText || '',
+      status: 'POSTED'
+     });
+    });
+   });

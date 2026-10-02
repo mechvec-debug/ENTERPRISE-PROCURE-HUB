@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post Goods Receipt (MIGO - Movement 101)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --sapShellBg: #354a5f; --sapPageBg: #edf1f5; --sapCardBg: #ffffff; --sapPrimary: #0070f2; --sapText: #32363a; }
+    body { font-family: "72", Arial, sans-serif; background-color: var(--sapPageBg); margin: 0; padding: 24px; color: var(--sapText); }
+    .header { background: var(--sapCardBg); padding: 20px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .card { background: var(--sapCardBg); padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
+    label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+    input, select { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e5e5e5; }
+    th { background: #f8f9fa; font-weight: 600; color: #555; }
+    .btn { border: none; padding: 9px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-primary { background: var(--sapPrimary); color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-post { background: #107e3e; color: white; }
+    .btn-post:hover { background: #0b5c2d; }
+    .badge-ordered { background: #e1f5fe; color: #0288d1; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+    .badge-partial { background: #fff3e0; color: #ef6c00; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h2 style="margin: 0 0 6px 0;"><i class="fa-solid fa-boxes-packing" style="color: #107e3e;"></i> Post Goods Receipt (MIGO)</h2>
+      <small style="color: #666;">Movement Type 101 - Inbound Goods Receipt against Purchase Order</small>
+    </div>
+    <a href="/" style="text-decoration: none;" class="btn btn-primary"><i class="fa-solid fa-house"></i> Launchpad</a>
+  </div>
+
+  <!-- Step 1: Select Purchase Order -->
+  <div class="card">
+    <h3 style="margin-top: 0;"><i class="fa-solid fa-magnifying-glass"></i> 1. Select Purchase Order for Receipt</h3>
+    <div class="form-grid">
+      <div>
+        <label>Active Purchase Order *</label>
+        <select id="poSelect" onchange="onPOSelected()">
+          <option value="">-- Select Ordered PO --</option>
+        </select>
+      </div>
+      <div>
+        <label>Delivery Note / Bill of Lading *</label>
+        <input type="text" id="deliveryNote" placeholder="e.g. DN-994821">
+      </div>
+      <div>
+        <label>Header Text / Remarks</label>
+        <input type="text" id="headerText" placeholder="Received in good condition">
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Line Items Receiving Table -->
+  <div class="card" id="itemsCard" style="display: none;">
+    <h3 style="margin-top: 0;"><i class="fa-solid fa-list-check"></i> 2. Verify Receiving Line Quantities</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Item #</th>
+          <th>Description</th>
+          <th>Ordered Qty</th>
+          <th>Already Received</th>
+          <th>Qty to Receive *</th>
+          <th>Unit</th>
+          <th>Storage Loc</th>
+          <th>Plant</th>
+        </tr>
+      </thead>
+      <tbody id="poItemsBody"></tbody>
+    </table>
+
+    <div style="margin-top: 24px; text-align: right;">
+      <button class="btn btn-post" onclick="submitGoodsReceipt()">
+        <i class="fa-solid fa-check-double"></i> Post Goods Receipt (101)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentPO = null;
+
+    async function loadOrderedPOs() {
+      const select = document.getElementById("poSelect");
+      try {
+        const res = await fetch("/odata/v4/procurement/PurchaseOrders?$filter=status eq 'Ordered' or status eq 'Partially Delivered'");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const pos = data.value || [];
+
+        select.innerHTML = '<option value="">-- Select Ordered PO --</option>';
+        pos.forEach(po => {
+          const opt = document.createElement("option");
+          opt.value = po.poNumber;
+          opt.textContent = `${po.poNumber} - ${po.supplierName} (${po.status}) - ${po.totalAmount} ${po.currency}`;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("Error loading POs:", err);
+      }
+    }
+
+    async function onPOSelected() {
+      const poNum = document.getElementById("poSelect").value;
+      const itemsCard = document.getElementById("itemsCard");
+      const tbody = document.getElementById("poItemsBody");
+
+      if (!poNum) {
+        itemsCard.style.display = "none";
+        return;
+      }
+
+      try {
+        const res = await fetch(`/odata/v4/procurement/PurchaseOrders?$filter=poNumber eq '${poNum}'&$expand=items`);
+        const data = await res.json();
+        currentPO = data.value?.[0];
+
+        if (!currentPO || !currentPO.items || currentPO.items.length === 0) {
+          alert("No items found for PO " + poNum);
+          itemsCard.style.display = "none";
+          return;
+        }
+
+        tbody.innerHTML = "";
+        currentPO.items.forEach(it => {
+          const ordQty = Number(it.quantity) || 0;
+          const recQty = Number(it.receivedQuantity) || 0;
+          const openQty = Math.max(0, ordQty - recQty);
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><strong>${it.itemNumber}</strong></td>
+            <td>${it.shortText}</td>
+            <td>${ordQty}</td>
+            <td>${recQty}</td>
+            <td><input type="number" id="qty_${it.itemNumber}" value="${openQty}" min="0" max="${openQty}" style="width: 90px; text-align: right;"></td>
+            <td><code>${it.unitOfMeasure}</code></td>
+            <td><input type="text" id="sLoc_${it.itemNumber}" value="101A" style="width: 80px;"></td>
+            <td>${it.plant || '1010'}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        itemsCard.style.display = "block";
+      } catch (e) {
+        alert("Error fetching PO details: " + e.message);
+      }
+    }
+
+    async function submitGoodsReceipt() {
+      const poNum = document.getElementById("poSelect").value;
+      const deliveryNote = document.getElementById("deliveryNote").value.trim();
+      const headerText = document.getElementById("headerText").value.trim();
+
+      if (!deliveryNote) {
+        alert("Please enter a Delivery Note / Bill of Lading reference.");
+        return;
+      }
+
+      const grItems = [];
+      currentPO.items.forEach(it => {
+        const qtyInput = document.getElementById(`qty_${it.itemNumber}`);
+        const sLocInput = document.getElementById(`sLoc_${it.itemNumber}`);
+        const qtyVal = Number(qtyInput?.value) || 0;
+
+        if (qtyVal > 0) {
+          grItems.push({
+            itemNumber: it.itemNumber,
+            poItemNumber: it.itemNumber,
+            shortText: it.shortText,
+            quantityReceived: qtyVal,
+            unitOfMeasure: it.unitOfMeasure,
+            storageLocation: sLocInput?.value || "101A",
+            plant: it.plant || "1010"
+          });
+        }
+      });
+
+      if (grItems.length === 0) {
+        alert("Please specify a received quantity greater than 0 for at least one item.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/odata/v4/procurement/postGoodsReceipt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            poNumber: poNum,
+            deliveryNote: deliveryNote,
+            headerText: headerText,
+            items: grItems
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.error?.message || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        alert(`SUCCESS!\nMaterial Document ${data.materialDocNumber} posted successfully (Movement 101).\nInventory updated for Storage Location 101A.`);
+
+        // Reset and reload
+        document.getElementById("itemsCard").style.display = "none";
+        document.getElementById("deliveryNote").value = "";
+        document.getElementById("headerText").value = "";
+        loadOrderedPOs();
+      } catch (err) {
+        alert("Posting failed: " + err.message);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadOrderedPOs);
+  </script>
+</body>
+</html>
