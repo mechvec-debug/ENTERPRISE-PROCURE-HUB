@@ -17,18 +17,19 @@ entity ShoppingCarts : cuid, managed {
 }
 
 entity CartItems : cuid {
-  parent        : Association to ShoppingCarts;
-  itemNumber    : Integer;
-  shortText     : String(255);
-  orderType     : String(50);
-  materialGroup : String(50);
-  quantity      : Decimal(13, 3);
-  unitOfMeasure : String(10);
-  netPrice      : Decimal(15, 2);
-  currency      : String(5);
-  accountingObj : String(50);
-  deliveryDate  : Date;
-  supplier      : String(100);
+  parent                : Association to ShoppingCarts;
+  itemNumber            : Integer;
+  orderType             : String(50);
+  shortText             : String(255);
+  materialGroup         : String(50);
+  quantity              : Decimal(13, 3);
+  unitOfMeasure         : String(10);
+  netPrice              : Decimal(15, 2);
+  currency              : String(5);
+  accAssignmentCategory : String(10);
+  accountingObj         : String(100);
+  deliveryDate          : Date;
+  supplier              : String(255);
 }
 
 entity PurchaseOrders : cuid, managed {
@@ -59,7 +60,9 @@ entity PurchaseOrderItems : cuid {
   deliveryDate          : Date;
   materialGroup         : String(50);
   plant                 : String(10);
+  storageLocation       : String(20);
   referencePR           : String(50);
+  accountingObj         : String(100);
 }
 
 // ==========================================

@@ -1,0 +1,3 @@
+testPlanId;shortDescription;profileName;connectedSystem;companyCode;plantCode;accountCategory;accountObject;deliveryAddress;orderType;itemDescription;materialGroup;quantity;unitOfMeasure;price;currency;supplier;approver
+TP_IN_UAT_001;Free text material order - Developer Monitor;IT-Sami;yHL;1000;1010;K;CC-9010-IT;HQ Tech Park Tower B Level 4 Bellary;Standard Purchase;27-inch 4K UHD Developer Monitor;IT-HARDWARE;2;EA;250.00;EUR;100458 - Dell Direct;approver.manager@enterprise.com
+TP_IN_UAT_002;Capex Cloud Migration Consulting;Cloud-Lead;yHL;1000;1010;P;PRJ-2026-CLOUD-01;HQ Tech Park Tower B Level 4 Bellary;Capex Asset;Cloud Migration Architecture Review;IT-SOFTWARE;10;HR;120.00;EUR;101200 - SAP Systems SE;approver.manager@enterprise.com

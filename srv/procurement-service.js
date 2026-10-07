@@ -153,20 +153,22 @@ module.exports = cds.service.impl(async function () {
       currency: cart.currency || 'EUR'
     }));
 
-    if (cartItems.length > 0) {
+if (cartItems.length > 0) {
       const poItems = cartItems.map(ci => ({
         ID: cds.utils.uuid(),
         parent_ID: poId,
         itemNumber: ci.itemNumber || 10,
-        accAssignmentCategory: 'K',
+        accAssignmentCategory: ci.accAssignmentCategory || 'K',
         shortText: ci.shortText || 'Item',
         quantity: ci.quantity || 1,
         unitOfMeasure: ci.unitOfMeasure || 'EA',
         netPrice: ci.netPrice || 0,
         currency: ci.currency || cart.currency || 'EUR',
+        accountingObj: ci.accountingObj || cart.costCenter || null,
         deliveryDate: ci.deliveryDate || null,
         materialGroup: ci.materialGroup || 'IT-HARDWARE',
         plant: cart.plant || '1010',
+        storageLocation: '-',
         referencePR: cart.cartNumber
       }));
       await cds.run(INSERT.into('mock.procurement.PurchaseOrderItems').entries(poItems));

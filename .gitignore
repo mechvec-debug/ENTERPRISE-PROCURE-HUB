@@ -4,3 +4,9 @@ node_modules/
 .cds-services.json
 .DS_Store
 dist/
+
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

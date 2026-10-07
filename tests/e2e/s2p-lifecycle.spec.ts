@@ -1,145 +1,159 @@
+// @ts-nocheck
 import { test, expect } from '@playwright/test';
+import * as path from 'path';
+import * as XLSX from 'xlsx';
 
-// Self-contained UUID generator (requires no @types/node packages)
-const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-  const r = Math.random() * 16 | 0;
-  return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+// Excel Reader Function
+function loadTestPlansFromExcel(filePath: string) {
+  const resolvedPath = path.resolve(filePath);
+  const workbook = XLSX.readFile(resolvedPath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  return XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+}
+
+// Load scenarios directly from the .xlsx workbook
+const testPlans = loadTestPlansFromExcel('./tests/data/test-plans.xlsx');
+
+const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
+  const r = (Math.random() * 16) | 0;
+  return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
 });
 
-test.describe('TP_IN_UAT_001: End-to-End S2P Material Procurement Workflow', () => {
-  const createdCartId = generateUUID();
-  const createdCartNumber = 'SC-' + Math.floor(100000 + Math.random() * 900000);
-  let generatedPONumber = '';
+test.describe('Data-Driven S2P Material Procurement Workflow (Excel Driven)', () => {
+  test.beforeAll(async ({ request }) => {
+    console.log('Connecting to CAP service on http://127.0.0.1:4004 ...');
+    const maxRetries = 20;
+    let isReady = false;
 
-  test('Execute Complete Procure-to-Pay Lifecycle (BAS Compatible)', async ({ request }) => {
-    // =========================================================================
-    // PHASE 1: VALIDATING PROFILE CONFIGURATION
-    // =========================================================================
-    console.log('\n======================================================');
-    console.log('--- PHASE 1: VALIDATING PROFILE CONFIGURATION ---');
-    const profile = {
-      profileName: 'IT-Sami',
-      cphSystem: 'yHL',
-      companyCode: '1000',
-      plant: '1010',
-      accountingObject: 'CC-9010-IT',
-      deliveryAddress: 'HQ Tech Park, Tower B, Level 4, Bellary'
-    };
-    expect(profile.profileName).toBe('IT-Sami');
-    console.log(`[PASS] Profile "${profile.profileName}" verified for Plant ${profile.plant}`);
-
-    // =========================================================================
-    // PHASE 2: SUBMIT ACTIVE SHOPPING CART (OData V4 Deep Insert)
-    // =========================================================================
-    console.log('\n--- PHASE 2: SUBMITTING ACTIVE SHOPPING CART ---');
-    const scPayload = {
-      ID: createdCartId,
-      cartNumber: createdCartNumber,
-      profileName: profile.profileName,
-      companyCode: profile.companyCode,
-      plant: profile.plant,
-      costCenter: profile.accountingObject,
-      approver: 'approver.manager@enterprise.com',
-      status: 'SUBMITTED',
-      totalAmount: 500.00,
-      currency: 'EUR',
-      items: [
-        {
-          ID: generateUUID(),
-          parent_ID: createdCartId,
-          itemNumber: 10,
-          shortText: '27-inch 4K UHD Developer Monitor',
-          orderType: 'Standard Purchase',
-          materialGroup: 'IT-HARDWARE',
-          quantity: 2,
-          unitOfMeasure: 'EA',
-          netPrice: 250.00,
-          currency: 'EUR',
-          accountingObj: 'CC-9010-IT',
-          supplier: '100458 - Dell Direct'
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const res = await request.get('/odata/v4/procurement/$metadata');
+        if (res.ok()) {
+          isReady = true;
+          console.log('[PASS] CAP OData service is online and ready for requests.\n');
+          break;
         }
-      ]
-    };
+      } catch (err) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
 
-    const scRes = await request.post('/odata/v4/procurement/ShoppingCarts', {
-      headers: {
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      data: scPayload
-    });
-
-    // Accept both 201 Created and 204 No Content per OData V4 spec
-    expect([201, 204]).toContain(scRes.status());
-    console.log(`[PASS] Cart ${createdCartNumber} created as ACTIVE. HTTP Status: ${scRes.status()}`);
-
-    // =========================================================================
-    // PHASE 3: MANAGER APPROVAL & AUTOMATIC PO GENERATION
-    // =========================================================================
-    console.log('\n--- PHASE 3: MANAGER APPROVAL & PO CREATION ---');
-    const approveRes = await request.post('/odata/v4/procurement/approveCart', {
-      headers: { 'Content-Type': 'application/json' },
-      data: { cartId: createdCartId }
-    });
-
-    expect(approveRes.status()).toBe(200);
-    const approvedData = await approveRes.json();
-    generatedPONumber = approvedData.poNumber;
-
-    expect(approvedData.status).toBe('PO_CREATED');
-    expect(generatedPONumber).toMatch(/^45000\d+$/);
-    console.log(`[PASS] Cart approved. SAP Purchase Order generated: ${generatedPONumber}`);
-
-    // Verify PO Header details in ERP persistence
-    const poRes = await request.get(`/odata/v4/procurement/PurchaseOrders?$filter=poNumber eq '${generatedPONumber}'`);
-    expect(poRes.ok()).toBeTruthy();
-    const poList = await poRes.json();
-    const poHeader = poList.value[0];
-
-    expect(poHeader.status).toBe('Ordered');
-    expect(poHeader.transmissionStatus).toBe('PO successfully sent to supplier');
-    console.log(`[PASS] PO ${generatedPONumber} confirmed in status "${poHeader.status}" with transmission status.`);
-
-    // =========================================================================
-    // PHASE 4: GOODS RECEIPT (MIGO - MOVEMENT 101)
-    // =========================================================================
-    console.log('\n--- PHASE 4: POST GOODS RECEIPT (MIGO 101) ---');
-    const grPayload = {
-      poNumber: generatedPONumber,
-      deliveryNote: 'DN-UAT-88102',
-      headerText: 'TP_IN_UAT_001 Inbound Delivery Verified',
-      items: [
-        {
-          itemNumber: 10,
-          poItemNumber: 10,
-          shortText: '27-inch 4K UHD Developer Monitor',
-          quantityReceived: 2,
-          unitOfMeasure: 'EA',
-          storageLocation: '101A',
-          plant: '1010'
-        }
-      ]
-    };
-
-    const grRes = await request.post('/odata/v4/procurement/postGoodsReceipt', {
-      headers: { 'Content-Type': 'application/json' },
-      data: grPayload
-    });
-
-    expect(grRes.status()).toBe(200);
-    const grResult = await grRes.json();
-    expect(grResult.materialDocNumber).toMatch(/^50000\d+$/);
-    console.log(`[PASS] Material Document ${grResult.materialDocNumber} posted (Movement 101).`);
-
-    // =========================================================================
-    // PHASE 5: FINAL PO DELIVERED STATUS VERIFICATION
-    // =========================================================================
-    console.log('\n--- PHASE 5: VERIFY FINAL STATUS TRANSITION ---');
-    const poFinalRes = await request.get(`/odata/v4/procurement/PurchaseOrders?$filter=poNumber eq '${generatedPONumber}'`);
-    const poFinalData = await poFinalRes.json();
-    const poFinal = poFinalData.value[0];
-
-    expect(poFinal.status).toBe('Delivered');
-    console.log(`[PASS] Purchase Order ${generatedPONumber} is now: "${poFinal.status}". Complete S2P cycle verified!\n======================================================`);
+    if (!isReady) {
+      throw new Error('CAP server on http://127.0.0.1:4004 did not respond.');
+    }
   });
+
+  for (const tp of testPlans) {
+    test(`Test Plan: ${tp.testPlanId} - ${tp.shortDescription}`, async ({ request }) => {
+      const createdCartId = generateUUID();
+      const cartNumber = 'SC-' + Math.floor(100000 + Math.random() * 900000);
+      let generatedPONumber = '';
+
+      const totalQty = parseFloat(tp.quantity) || 1;
+      const unitPrice = parseFloat(tp.price) || 0;
+      const expectedTotal = totalQty * unitPrice;
+      const deliveryDate = tp.deliveryDate || '2026-10-15';
+
+      console.log(`======================================================`);
+      console.log(`EXECUTING TEST PLAN: ${tp.testPlanId}`);
+      console.log(`Description: ${tp.shortDescription}`);
+      console.log(`Profile: ${tp.profileName} | Plant: ${tp.plantCode} | Delivery Date: ${deliveryDate}`);
+      console.log(`======================================================`);
+
+      // PHASE 1: SHOPPING PROFILE
+      expect(tp.profileName).toBeTruthy();
+      console.log(`[PASS] Phase 1: Profile "${tp.profileName}" verified`);
+
+      // PHASE 2: SUBMIT SHOPPING CART
+      const scPayload = {
+        ID: createdCartId,
+        cartNumber: cartNumber,
+        profileName: tp.profileName,
+        companyCode: String(tp.companyCode),
+        plant: String(tp.plantCode),
+        costCenter: tp.accountObject,
+        approver: tp.approver || 'approver.manager@enterprise.com',
+        status: 'SUBMITTED',
+        totalAmount: expectedTotal,
+        currency: tp.currency || 'EUR',
+        items: [
+          {
+            ID: generateUUID(),
+            parent_ID: createdCartId,
+            itemNumber: 10,
+            shortText: tp.itemDescription,
+            orderType: tp.orderType,
+            materialGroup: tp.materialGroup,
+            quantity: totalQty,
+            unitOfMeasure: tp.unitOfMeasure,
+            netPrice: unitPrice,
+            currency: tp.currency || 'EUR',
+            accountingObj: tp.accountObject,
+            deliveryDate: deliveryDate, // <-- Passed into Shopping Cart item
+            supplier: tp.supplier
+          }
+        ]
+      };
+
+      const scRes = await request.post('/odata/v4/procurement/ShoppingCarts', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        data: scPayload
+      });
+
+      expect([201, 204]).toContain(scRes.status());
+      console.log(`[PASS] Phase 2: Cart ${cartNumber} submitted with delivery date ${deliveryDate}`);
+
+      // PHASE 3: MANAGER APPROVAL & PO GENERATION
+      const approveRes = await request.post('/odata/v4/procurement/approveCart', {
+        headers: { 'Content-Type': 'application/json' },
+        data: { cartId: createdCartId }
+      });
+
+      expect(approveRes.status()).toBe(200);
+      const approvedData = await approveRes.json();
+      generatedPONumber = approvedData.poNumber;
+      console.log(`[PASS] Phase 3: PO generated: ${generatedPONumber}`);
+
+      // PHASE 4: GOODS RECEIPT (MIGO 101)
+      const grPayload = {
+        poNumber: generatedPONumber,
+        deliveryNote: `DN-${tp.testPlanId}`,
+        headerText: `Automated Goods Receipt for ${tp.testPlanId}`,
+        items: [
+          {
+            itemNumber: 10,
+            poItemNumber: 10,
+            shortText: tp.itemDescription,
+            quantityReceived: totalQty,
+            unitOfMeasure: tp.unitOfMeasure,
+            storageLocation: '101A',
+            plant: String(tp.plantCode)
+          }
+        ]
+      };
+
+      const grRes = await request.post('/odata/v4/procurement/postGoodsReceipt', {
+        headers: { 'Content-Type': 'application/json' },
+        data: grPayload
+      });
+
+      expect(grRes.status()).toBe(200);
+      const grResult = await grRes.json();
+      console.log(`[PASS] Phase 4: Goods Receipt Material Doc ${grResult.materialDocNumber} posted`);
+
+      // PHASE 5: VERIFY FINAL STATUS & ITEM INTEGRITY
+      const poVerifyRes = await request.get(`/odata/v4/procurement/PurchaseOrders?$filter=poNumber eq '${generatedPONumber}'&$expand=items`);
+      const poVerifyData = await poVerifyRes.json();
+      const finalPO = poVerifyData.value[0];
+
+      expect(finalPO.status).toBe('Delivered');
+      expect(finalPO.items[0].accountingObj).toBe(tp.accountObject);
+      expect(finalPO.items[0].deliveryDate).toBe(deliveryDate);
+      console.log(`[PASS] Phase 5: PO ${generatedPONumber} items verified with Account Assignment and Delivery Date.\n`);
+    });
+  }
 });

@@ -46,3 +46,93 @@ service ProcurementService @(path: '/odata/v4/procurement') {
     items        : many GRItemInput
   ) returns GoodsReceipts;
 }
+// =========================================================================
+// OBJECT PAGE ANNOTATIONS: SHOPPING CART LINE ITEMS
+// =========================================================================
+annotate ProcurementService.CartItems with @(
+  UI.HeaderInfo: {
+    TypeName: 'Line Item',
+    TypeNamePlural: 'Line Items',
+    Title: { $Type: 'UI.DataField', Value: shortText },
+    Description: { $Type: 'UI.DataField', Value: itemNumber }
+  },
+  UI.Facets: [
+    {
+      $Type: 'UI.ReferenceFacet',
+      ID: 'CartItemDetailsFacet',
+      Label: 'Item Overview',
+      Target: '@UI.FieldGroup#CartItemDetails'
+    },
+    {
+      $Type: 'UI.ReferenceFacet',
+      ID: 'CartAccountingFacet',
+      Label: 'Account Assignment & Logistics',
+      Target: '@UI.FieldGroup#CartAccounting'
+    }
+  ],
+  UI.FieldGroup #CartItemDetails: {
+    Data: [
+      { $Type: 'UI.DataField', Value: itemNumber, Label: 'Item Number' },
+      { $Type: 'UI.DataField', Value: shortText, Label: 'Description' },
+      { $Type: 'UI.DataField', Value: materialGroup, Label: 'Material Group' },
+      { $Type: 'UI.DataField', Value: quantity, Label: 'Quantity' },
+      { $Type: 'UI.DataField', Value: unitOfMeasure, Label: 'Unit of Measure' },
+      { $Type: 'UI.DataField', Value: netPrice, Label: 'Net Price' },
+      { $Type: 'UI.DataField', Value: currency, Label: 'Currency' }
+    ]
+  },
+  UI.FieldGroup #CartAccounting: {
+    Data: [
+      { $Type: 'UI.DataField', Value: orderType, Label: 'Order Type' },
+      { $Type: 'UI.DataField', Value: accountingObj, Label: 'Account Assignment' },
+      { $Type: 'UI.DataField', Value: supplier, Label: 'Supplier' },
+      { $Type: 'UI.DataField', Value: deliveryDate, Label: 'Planned Delivery Date' }
+    ]
+  }
+);
+
+// =========================================================================
+// OBJECT PAGE ANNOTATIONS: PURCHASE ORDER LINE ITEMS
+// =========================================================================
+annotate ProcurementService.PurchaseOrderItems with @(
+  UI.HeaderInfo: {
+    TypeName: 'PO Item',
+    TypeNamePlural: 'PO Items',
+    Title: { $Type: 'UI.DataField', Value: shortText },
+    Description: { $Type: 'UI.DataField', Value: itemNumber }
+  },
+  UI.Facets: [
+    {
+      $Type: 'UI.ReferenceFacet',
+      ID: 'PoItemDetailsFacet',
+      Label: 'Purchase Order Item Information',
+      Target: '@UI.FieldGroup#PoItemDetails'
+    },
+    {
+      $Type: 'UI.ReferenceFacet',
+      ID: 'PoDeliveryFacet',
+      Label: 'Delivery & Inventory Details',
+      Target: '@UI.FieldGroup#PoDelivery'
+    }
+  ],
+  UI.FieldGroup #PoItemDetails: {
+    Data: [
+      { $Type: 'UI.DataField', Value: itemNumber, Label: 'Item Number' },
+      { $Type: 'UI.DataField', Value: shortText, Label: 'Item Description' },
+      { $Type: 'UI.DataField', Value: materialGroup, Label: 'Material Group' },
+      { $Type: 'UI.DataField', Value: quantity, Label: 'Order Quantity' },
+      { $Type: 'UI.DataField', Value: unitOfMeasure, Label: 'Order Unit' },
+      { $Type: 'UI.DataField', Value: netPrice, Label: 'Net Price' },
+      { $Type: 'UI.DataField', Value: currency, Label: 'Currency' }
+    ]
+  },
+  UI.FieldGroup #PoDelivery: {
+    Data: [
+      { $Type: 'UI.DataField', Value: receivedQuantity, Label: 'Quantity Received' },
+      { $Type: 'UI.DataField', Value: storageLocation, Label: 'Storage Location' },
+      { $Type: 'UI.DataField', Value: plant, Label: 'Plant' },
+      { $Type: 'UI.DataField', Value: accountingObj, Label: 'Cost Center / WBS' },
+      { $Type: 'UI.DataField', Value: deliveryDate, Label: 'Delivery Date' }
+    ]
+  }
+);

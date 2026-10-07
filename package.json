@@ -12,12 +12,15 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "@sap/cds-dk": "^10"
+    "@sap/cds-dk": "^10",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "cds-serve",
     "watch": "cds watch",
-    "test": "npx playwright test"
+    "test": "npx playwright test --project=background-headless",
+    "test:background": "npx playwright test --project=background-headless",
+    "test:foreground": "npx playwright test --project=foreground-demo"
   },
   "cds": {
     "sql": {

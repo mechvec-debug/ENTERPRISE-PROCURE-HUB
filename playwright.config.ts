@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -7,28 +8,27 @@ export default defineConfig({
     timeout: 10 * 1000
   },
   fullyParallel: false,
-  workers: 1, // Sequential flow execution for procurement lifecycle
+  workers: 1,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }]
   ],
   use: {
     baseURL: 'http://127.0.0.1:4004',
-    trace: 'on-first-retry',
-    screenshot: 'on',
-    video: 'on' // Records full video of requester actions
+    trace: 'off'
+  },
+  // Automatically boots or verifies the CAP backend before running tests
+  webServer: {
+    command: 'npx cds watch',
+    url: 'http://127.0.0.1:4004',
+    reuseExistingServer: true,
+    timeout: 120 * 1000
   },
   projects: [
-    // 1. BACKGROUND MODE (Runs the fast API lifecycle test inside SAP BAS)
     {
       name: 'background-headless',
-      testMatch: /s2p-lifecycle\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        headless: true
-      }
+      testMatch: /s2p-lifecycle\.spec\.ts/
     },
-    // 2. FOREGROUND DEMO MODE (Runs the slow-motion UI walkthrough on local laptop)
     {
       name: 'foreground-demo',
       testMatch: /s2p-ui\.spec\.ts/,
@@ -37,7 +37,7 @@ export default defineConfig({
         headless: false,
         viewport: { width: 1440, height: 900 },
         launchOptions: {
-          slowMo: 1200 // Delays each action by 1.2s for visual presentation
+          slowMo: 1200
         }
       }
     }
